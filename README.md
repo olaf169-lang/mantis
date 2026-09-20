@@ -1,5 +1,21 @@
 # MANTIS 🦗
 
+## ▶ Zagraj
+
+**Gra online (zawsze najnowsza wersja):**
+### 👉 https://olaf169-lang.github.io/mantis/
+
+**Gra w jednym pliku (można zapisać na telefon i grać offline, można wysłać znajomym):**
+### ⬇ https://olaf169-lang.github.io/mantis/mantis-jeden-plik.html
+
+**Zainstaluj jak aplikację:** otwórz adres na telefonie, potem
+Android (Chrome): menu ⋮ → „Zainstaluj aplikację”.
+iPhone (Safari): Udostępnij → „Do ekranu głównego”.
+Po instalacji gra działa też bez internetu.
+
+---
+
+
 Prosta, przyjazna gra mobilna dla dziecka około 5 do 6 lat. Sterujesz modliszką,
 polujesz na owady, rośniesz przez kolejne stadia, przeżywasz wylinkę i dorastasz
 do modliszki ze skrzydłami. Bez przemocy, bez kar, z minimalną ilością tekstu.
