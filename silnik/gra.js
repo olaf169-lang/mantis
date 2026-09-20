@@ -35,13 +35,13 @@
      rośnie, podczas gdy zoom maleje, więc świat kurczy się względem
      modliszki. To daje odczucie wzrostu mocniej niż samo powiększenie. */
   const STADIA = [
-    { food: 3, dl: 90,  zoom: 1.040 },
-    { food: 4, dl: 106, zoom: 0.960 },
-    { food: 4, dl: 124, zoom: 0.880 },
-    { food: 5, dl: 146, zoom: 0.800 },
-    { food: 5, dl: 172, zoom: 0.720 },
-    { food: 6, dl: 205, zoom: 0.640 },
-    { food: 6, dl: 240, zoom: 0.576 },
+    { food: 4, dl: 90,  zoom: 1.040 },
+    { food: 5, dl: 106, zoom: 0.960 },
+    { food: 5, dl: 124, zoom: 0.880 },
+    { food: 6, dl: 146, zoom: 0.800 },
+    { food: 6, dl: 172, zoom: 0.720 },
+    { food: 7, dl: 205, zoom: 0.640 },
+    { food: 7, dl: 240, zoom: 0.576 },
     { food: 0, dl: 285, zoom: 0.512 }   // L8 dorosła, koniec wzrostu
   ];
 
@@ -51,7 +51,8 @@
   const gruntY = WYS * 0.80;
 
   /* który świat dla którego gatunku */
-  const SWIAT_GATUNKU = { zwyczajna: 'laka', duchowa: 'sciolka', storczykowa: 'zmierzch' };
+  const SWIAT_GATUNKU = { zwyczajna: 'laka', duchowa: 'sciolka', storczykowa: 'zmierzch',
+                          olbrzymia: 'sawanna', diabel: 'busz' };
 
   function przygotujTlo(swiatKey) {
     const c = tloCanvas.getContext('2d');
@@ -112,7 +113,9 @@
       const t = Owad.TYPY[k];
       if (t.ruch === 'tlo') return true;                   // mrówka zawsze jako tło
       if (k === 'wazka') return stan.faza === 'wolne';      // ważka tylko po zwycięstwie
-      return t.odStadium <= st && st < t.odStadium + 4;    // owady znikają, gdy modliszka za duża
+      if (t.swiat && t.swiat !== stan.swiatKey) return false;   // owad przypisany do świata
+      if (t.doStadium && st > t.doStadium) return false;        // małe owady znikają wyżej
+      return t.odStadium <= st;
     });
   }
 
@@ -121,8 +124,17 @@
     /* zawsze trzymamy przynajmniej jeden łatwy owad na planszy */
     const latwe = typy.filter(k => Owad.TYPY[k].czujnosc === 0);
     const brakLatwego = !stan.owady.some(o => o.zyje && Owad.TYPY[o.typ].czujnosc === 0 && Owad.TYPY[o.typ].ruch !== 'tlo');
-    const pula = (brakLatwego && latwe.length) ? latwe : typy;
-    const typ = pula[(Math.random() * pula.length) | 0];
+    let typ;
+    if (brakLatwego && latwe.length) {
+      typ = latwe[(Math.random() * latwe.length) | 0];      // dbamy o jeden łatwy
+    } else {
+      /* im wyższe stadium, tym większe (bardziej pożywne) owady częstsze */
+      const st = stan.modliszka.stadium;
+      const wagi = typy.map(k => 1 + Owad.TYPY[k].pozywienie * (0.4 + st * 0.35));
+      let suma = wagi.reduce((a, b) => a + b, 0), los = Math.random() * suma;
+      typ = typy[0];
+      for (let i = 0; i < typy.length; i++) { los -= wagi[i]; if (los <= 0) { typ = typy[i]; break; } }
+    }
     if (!typ) return null;
     const t = Owad.TYPY[typ];
     const m = stan.modliszka;
@@ -145,8 +157,10 @@
   function uzupelnijOwady(dt) {
     stan.owady = stan.owady.filter(o => o.zyje || o.znika > 0);
     const zywe = stan.owady.filter(o => o.zyje && Owad.TYPY[o.typ].ruch !== 'tlo').length;
-    const ile = 4;
-    if (zywe < ile && Math.random() < dt * 1.4) {
+    const st = stan.modliszka.stadium;
+    const ile = Math.max(2, 4 - Math.floor((st - 1) / 2));   // wyżej mniej owadów naraz
+    const tempo = Math.max(0.6, 1.4 - st * 0.08);            // wyżej rzadziej się pojawiają
+    if (zywe < ile && Math.random() < dt * tempo) {
       const o = nowyOwad(true);
       if (o) stan.owady.push(o);
     }
@@ -200,6 +214,16 @@
       case 'lot-szybki':
         o.x += Math.cos(o.faza * 2.2) * 110 * dt * o.kierunek;
         o.y = o.bazaY + Math.sin(o.faza * 4) * 26; break;
+      case 'lazik':                       // chrząszcz: powolny łazik po ziemi
+        o.x += o.kierunek * 20 * dt;
+        if (o.x < 40 || o.x > SWIAT_SZER - 40) o.kierunek *= -1;
+        break;
+      case 'lot-brzek':                   // pszczoła: brzęczący, nerwowy zawis
+        o.x += Math.sin(o.faza * 3) * 40 * dt;
+        o.y = o.bazaY + Math.sin(o.faza * 6) * 10; break;
+      case 'lot-motyl':                   // motyl: powolne, chwiejne trzepotanie
+        o.x += Math.sin(o.faza * 1.1) * 42 * dt;
+        o.y = o.bazaY + Math.sin(o.faza * 2.3) * 30; break;
     }
     if (o.kierunek === undefined) o.kierunek = o.vx >= 0 ? 1 : -1;
     else if (Math.abs(o.vx) > 1) o.kierunek = o.vx > 0 ? 1 : -1;
@@ -302,7 +326,7 @@
         const d = Math.abs(o.x - glowaX(m));
         const prog = (m.gatunek === 'duchowa') ? SKRADANIE * 2 + 6 : SKRADANIE + 6;
         /* im wyższe stadium, tym owady czujniejsze: promień rośnie z L */
-        const stMnoznik = 1 + (m.stadium - 1) * 0.12;    // L1 x1.0 ... L8 x1.84
+        const stMnoznik = 1 + (m.stadium - 1) * 0.16;    // wyżej owady jeszcze czujniejsze
         if (m.predkosc > prog && d < t.czujnosc * 130 * stMnoznik) sploszenie(o);
       }
       /* wabienie: modliszka storczykowa stojąc nieruchomo przyciąga
@@ -342,11 +366,16 @@
     /* atak */
     if (m.atak > 0) {
       m.atak += dt * 6;
-      if (m.atak >= 0.5 && m.owadCel && m.owadCel.zyje && !m.owadCel.zlapany) {
-        /* w połowie ruchu chwytamy owada */
-        const o = m.owadCel;
+      if (m.atak >= 0.5 && m.owadCel && m.owadCel.zyje && !m.owadCel.zlapany && !m.owadCel.pudlo) {
+        /* w połowie ruchu chwytamy owada, ale czujny owad potrafi wymknąć
+           się w ostatniej chwili, a im wyższe stadium, tym częściej */
+        const o = m.owadCel, t = Owad.TYPY[o.typ];
         const dx = o.x - glowaX(m);
-        if (Math.abs(dx) < m.dlugosc * 0.7) { o.zlapany = true; }
+        if (Math.abs(dx) < m.dlugosc * 0.7) {
+          const szansaUcieczki = Math.min(0.55, t.czujnosc * (0.1 + (m.stadium - 1) * 0.05));
+          if (Math.random() < szansaUcieczki) { o.pudlo = true; sploszenie(o); m.owadCel = null; }
+          else { o.zlapany = true; }
+        }
       }
       if (m.atak >= 1) {
         m.atak = 0;
@@ -372,7 +401,7 @@
       if (!stan.owady.some(o => o.typ === 'wazka' && o.zyje) && Math.random() < dt * 0.25) {
         const o = nowyOwad(true); if (o) { o.typ = 'wazka'; o.naZiemi = false; o.bazaY = gruntY - 90; }
       }
-      if (stan.wolneCzas > 22 && !stan.ooteka) rozpocznijOoteke();
+      if (stan.wolneCzas > 5 && !stan.ooteka) rozpocznijOoteke();
     }
 
     /* kamera z uwzględnieniem zoomu: modliszka blisko środka */
@@ -396,6 +425,7 @@
       for (let i = 0; i < 12; i++) {
         o.male.push({ x: o.x + (Math.random()-0.5)*40, y: o.y + 20, vx: (Math.random() - 0.5) * 120, faza: Math.random() * 6, zyc: 0 });
       }
+      if (onEpilog) onEpilog();          // podświetl domek: to koniec
     }
     o.male.forEach(mm => { mm.zyc += dt; mm.x += mm.vx * dt; mm.faza += dt; });
   }
@@ -454,6 +484,7 @@
       if (m.finalowa) {
         stan.faza = 'zwyciestwo'; stan.zwyc = 0;
         karta('ikona:skrzydla');
+        dzwiek('wygrana');
         if (onUkonczono) onUkonczono(m.gatunek);   // zapis i odblokowanie następnej
       } else { stan.faza = 'gra'; m.dlugosc = m.dlugoscCel; m.zoom = m.zoomCel; }
     }
@@ -840,7 +871,7 @@
   }
 
   /* --- publiczne API dla menu (M4) ------------------------------------- */
-  let onUkonczono = null, onKarta = null;
+  let onUkonczono = null, onKarta = null, onEpilog = null;
   function karta(id) { if (onKarta) onKarta(id); }
   function startGry(gatunek) {
     const m = stan.modliszka;
@@ -911,6 +942,7 @@
     doMenu: () => { stan.faza = 'menu'; },
     naUkonczenie: (cb) => { onUkonczono = cb; },
     naKarta: (cb) => { onKarta = cb; },
+    naEpilog: (cb) => { onEpilog = cb; },
     ustawDzwiek: (wl) => { stan.dzwiekWl = wl; if (globalThis.Dzwiek) globalThis.Dzwiek.ustaw(wl); },
     faza: () => stan.faza,
     stan: stan

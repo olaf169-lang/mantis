@@ -165,6 +165,16 @@
 
   /* odkrycie karty w trakcie gry: zapis plus mały listek w rogu, gra się
      nie zatrzymuje */
+  MantisGra.naEpilog(() => {
+    /* koniec: podświetl domek, żeby było wiadomo, że można wrócić */
+    elDoDomu.classList.add('pulsuje');
+  });
+  /* zdejmij podświetlenie po powrocie do domu */
+  const _pokazDom = pokazDom;
+  pokazDom = function () { elDoDomu.classList.remove('pulsuje'); _pokazDom(); };
+  elDoDomu.removeEventListener('click', _pokazDom);
+  elDoDomu.addEventListener('click', pokazDom);
+
   let listekTimer = null;
   MantisGra.naKarta((id) => {
     const nowa = Zapis.odkryj(dane, id);

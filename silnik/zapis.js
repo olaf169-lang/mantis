@@ -9,7 +9,7 @@
   'use strict';
 
   const KLUCZ = 'mantis:stan';
-  const KOLEJNOSC = ['zwyczajna', 'duchowa', 'storczykowa'];
+  const KOLEJNOSC = ['zwyczajna', 'duchowa', 'storczykowa', 'olbrzymia', 'diabel'];
 
   const domyslny = {
     wersja: 2,

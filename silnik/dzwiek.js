@@ -88,8 +88,18 @@
     ton(659, 0.6, 'sine', 0.10, 0.12);
   }
 
+  /* zwycięstwo: krótka, wesoła melodyjka „przeszedłeś grę". */
+  function wygrana() {
+    const nuty = [523, 659, 784, 1047, 880, 1047];   // C E G C A C, w górę
+    nuty.forEach((f, i) => ton(f, 0.32, 'triangle', 0.13, i * 0.16));
+    /* miękki akord na końcu */
+    ton(523, 0.7, 'sine', 0.08, nuty.length * 0.16);
+    ton(659, 0.7, 'sine', 0.08, nuty.length * 0.16 + 0.02);
+    ton(784, 0.8, 'sine', 0.08, nuty.length * 0.16 + 0.04);
+  }
+
   function ustaw(wl) { wlaczony = !!wl; if (wl) odblukajBezpiecznie(); }
   function odblukajBezpiecznie() { try { odblokuj(); } catch (e) {} }
 
-  globalny.Dzwiek = { odblokuj, ustaw, krok, jedz, wzrost, wylinka };
+  globalny.Dzwiek = { odblokuj, ustaw, krok, jedz, wzrost, wylinka, wygrana };
 })(window);

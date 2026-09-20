@@ -40,6 +40,18 @@
       jasny: '#fff5f8', sredni: '#f8cfdf', ciemny: '#e09ab8',
       kontur: '#8f5471', oko: '#fff8fb', zrenica: '#5e2d45',
       skrzydlo: 'rgba(255,240,246,0.74)', plamka: false, platki: true
+    },
+    olbrzymia: {
+      nazwa: 'modliszka olbrzymia', lacinska: 'Ischnomantis gigas',
+      jasny: '#c9bfa6', sredni: '#9c8f72', ciemny: '#6d6149',
+      kontur: '#3f382a', oko: '#efe8d2', zrenica: '#2a2419',
+      skrzydlo: 'rgba(201,191,166,0.7)', plamka: false, smukla: true
+    },
+    diabel: {
+      nazwa: 'diabeł kwiatowy', lacinska: 'Idolomantis diabolica',
+      jasny: '#a6d17a', sredni: '#6fa348', ciemny: '#47702c',
+      kontur: '#2e4a1b', oko: '#eaf3d0', zrenica: '#20330f',
+      skrzydlo: 'rgba(166,209,122,0.72)', plamka: true, lisciasta: true
     }
   };
 
@@ -369,6 +381,9 @@
     const pr = proporcje(o.stadium || 1);
     let pal = GATUNKI[o.gatunek || 'zwyczajna'];
     if ((o.gatunek === 'storczykowa') && (o.stadium || 1) === 1) pal = MIMIKRA;
+    if (pal.smukla) {                       // Ischnomantis gigas: długa i cienka
+      pr.grubosc *= 0.72; pr.przedtulow *= 1.3; pr.odwlok *= 1.12; pr.nogi *= 1.2;
+    }
     const z = o.poza || {};
     const s = szkielet(pr, z);
     const gr = pr.grubosc, n = pr.nogi;

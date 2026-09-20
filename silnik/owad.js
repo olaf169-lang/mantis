@@ -14,9 +14,9 @@
 
   const TYPY = {
     muszka:   { nazwa: 'muszka owocówka', ruch: 'lot-zryw', czujnosc: 0.0, pozywienie: 1, odStadium: 1,
-                skala: 0.62, korpus: '#6b6f78', oko: '#a33', skrzydla: true, dlugie: false },
+                doStadium: 3, skala: 0.62, korpus: '#6b6f78', oko: '#a33', skrzydla: true },
     mszyca:   { nazwa: 'mszyca', ruch: 'pelza', czujnosc: 0.0, pozywienie: 1, odStadium: 1,
-                skala: 0.58, korpus: '#9ccb6a', oko: '#2b3f14', skrzydla: false, pekata: true },
+                doStadium: 3, skala: 0.58, korpus: '#9ccb6a', oko: '#2b3f14', skrzydla: false, pekata: true },
     mrowka:   { nazwa: 'mrówka', ruch: 'tlo', czujnosc: 1, pozywienie: 0, odStadium: 1,
                 skala: 0.62, korpus: '#7a3b22', oko: '#1a0d06', skrzydla: false, segmenty: true },
     mucha:    { nazwa: 'mucha domowa', ruch: 'lot-luk', czujnosc: 0.5, pozywienie: 1, odStadium: 3,
@@ -26,7 +26,16 @@
     swierszcz:{ nazwa: 'świerszcz', ruch: 'skok', czujnosc: 0.7, pozywienie: 3, odStadium: 5,
                 skala: 1.15, korpus: '#5f7a34', oko: '#20130a', skrzydla: false, dlugonogi: true },
     wazka:    { nazwa: 'ważka', ruch: 'lot-szybki', czujnosc: 0.9, pozywienie: 5, odStadium: 8,
-                skala: 1.35, korpus: '#3aa6b0', oko: '#123', skrzydla: true, wazka: true, dlugie: true }
+                skala: 1.35, korpus: '#3aa6b0', oko: '#123', skrzydla: true, wazka: true, dlugie: true },
+    /* owady przypisane do konkretnych światów (pole swiat) */
+    chrzaszcz:{ nazwa: 'chrząszcz', ruch: 'lazik', czujnosc: 0.2, pozywienie: 3, odStadium: 3,
+                swiat: 'sciolka', skala: 1.0, korpus: '#4a3524', oko: '#140c06', skrzydla: false, chrzaszcz: true },
+    pszczola: { nazwa: 'pszczoła', ruch: 'lot-brzek', czujnosc: 0.5, pozywienie: 2, odStadium: 2,
+                swiat: 'zmierzch', skala: 0.8, korpus: '#e0a92e', oko: '#241a06', skrzydla: true, paski: true },
+    osa:      { nazwa: 'osa', ruch: 'lot-szybki', czujnosc: 0.85, pozywienie: 3, odStadium: 4,
+                swiat: 'sawanna', skala: 0.82, korpus: '#f0c000', oko: '#201400', skrzydla: true, paski: true, smukla: true },
+    motyl:    { nazwa: 'motyl', ruch: 'lot-motyl', czujnosc: 0.4, pozywienie: 3, odStadium: 3,
+                swiat: 'busz', skala: 1.1, korpus: '#7a4a86', oko: '#180a20', skrzydla: true, motyl: true }
   };
 
   const mieszaj = (a, b, t) => a + (b - a) * t;
@@ -50,6 +59,25 @@
     ctx.beginPath();
     ctx.ellipse(dl * 0.5, 0, dl * 0.5, sz, 0, 0, 7);
     ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* duże, kolorowe skrzydła motyla (rysowane pod korpusem) */
+  function motylSkrzydla(ctx, faza, typ) {
+    const flap = 1 + Math.sin(faza * 5) * 0.12;
+    const kol = typ.korpus, ciemny = przyciemnij(kol, 0.4);
+    function skrz(dx, rx, ry) {
+      const g = ctx.createRadialGradient(dx, -2, 1, dx, -2, Math.max(rx, ry));
+      g.addColorStop(0, '#fff7fb'); g.addColorStop(0.45, kol); g.addColorStop(1, ciemny);
+      ctx.fillStyle = g; ctx.strokeStyle = ciemny; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.ellipse(dx, -2, rx, ry, 0, 0, 7); ctx.fill(); ctx.stroke();
+    }
+    ctx.save(); ctx.scale(1, flap);
+    skrz(-10, 9, 8); skrz(10, 9, 8);       // górne skrzydła
+    skrz(-8, 6, 6);  skrz(8, 6, 6);        // dolne skrzydła
+    /* jasne kropki na skrzydłach */
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    [[-10,-2],[10,-2]].forEach(([x,y])=>{ ctx.beginPath(); ctx.arc(x, y, 2, 0, 7); ctx.fill(); });
     ctx.restore();
   }
 
@@ -94,6 +122,8 @@
         skrzydlo(ctx, -1, -2, 22, 4, 0.2 + trzepot * 0.4, false);
         skrzydlo(ctx, -5, -1, 20, 3.5, -0.15 - trzepot * 0.4, false);
         skrzydlo(ctx, -5, -1, 20, 3.5, 0.15 + trzepot * 0.4, false);
+      } else if (typ.motyl) {
+        motylSkrzydla(ctx, faza, typ);
       } else {
         const dl = typ.cma ? 26 : 18, sz = typ.cma ? 12 : 6;
         skrzydlo(ctx, -2, -3, dl, sz, -0.3 - trzepot, typ.cma);
@@ -114,8 +144,21 @@
       ctx.ellipse(-2, 2, 8, 5, 0, 0, 7); ctx.fill();
       ctx.beginPath(); ctx.moveTo(-6, 0);
       ctx.lineTo(-26, -1); ctx.lineTo(-26, 3); ctx.lineTo(-6, 4); ctx.closePath();
+    } else if (typ.chrzaszcz) {
+      /* owalne, błyszczące pokrywy skrzydeł */
+      ctx.ellipse(-1, 2, 12, 9, 0, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = ciemny; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-1, -6); ctx.lineTo(-1, 11); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.beginPath(); ctx.ellipse(-5, -2, 3.5, 5, 0.3, 0, 7); ctx.fill();
+      ctx.beginPath();
+    } else if (typ.motyl) {
+      ctx.ellipse(0, 2, 3.5, 8, 0, 0, 7);
     } else ctx.ellipse(0, 2, 12, 6, 0, 0, 7);
     ctx.fill(); ctx.stroke();
+    /* paski osy i pszczoły */
+    if (typ.paski) {
+      ctx.strokeStyle = '#201400'; ctx.lineWidth = 2.2;
+      for (const sx of [-5, -1, 3]) { ctx.beginPath(); ctx.moveTo(sx, -5); ctx.lineTo(sx, 9); ctx.stroke(); }
+    }
 
     /* głowa */
     ctx.fillStyle = ciemny;

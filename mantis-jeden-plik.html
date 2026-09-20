@@ -9,7 +9,6 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <title>MANTIS</title>
-<!-- Wersja w jednym pliku, offline bez serwera. -->
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body {
@@ -108,6 +107,13 @@
     opacity: 0; transition: transform .4s, opacity .4s; pointer-events: none;
   }
   #listek.pokaz { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+  /* domek pulsuje po epilogu, żeby było wiadomo, że to koniec */
+  @keyframes pulsHome {
+    0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255,210,60,0.7); }
+    50% { transform: scale(1.12); box-shadow: 0 0 0 12px rgba(255,210,60,0); }
+  }
+  #doDomu.pulsuje { background: #ffd23f; animation: pulsHome 1.1s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -178,6 +184,18 @@
       jasny: '#fff5f8', sredni: '#f8cfdf', ciemny: '#e09ab8',
       kontur: '#8f5471', oko: '#fff8fb', zrenica: '#5e2d45',
       skrzydlo: 'rgba(255,240,246,0.74)', plamka: false, platki: true
+    },
+    olbrzymia: {
+      nazwa: 'modliszka olbrzymia', lacinska: 'Ischnomantis gigas',
+      jasny: '#c9bfa6', sredni: '#9c8f72', ciemny: '#6d6149',
+      kontur: '#3f382a', oko: '#efe8d2', zrenica: '#2a2419',
+      skrzydlo: 'rgba(201,191,166,0.7)', plamka: false, smukla: true
+    },
+    diabel: {
+      nazwa: 'diabeł kwiatowy', lacinska: 'Idolomantis diabolica',
+      jasny: '#a6d17a', sredni: '#6fa348', ciemny: '#47702c',
+      kontur: '#2e4a1b', oko: '#eaf3d0', zrenica: '#20330f',
+      skrzydlo: 'rgba(166,209,122,0.72)', plamka: true, lisciasta: true
     }
   };
 
@@ -507,6 +525,9 @@
     const pr = proporcje(o.stadium || 1);
     let pal = GATUNKI[o.gatunek || 'zwyczajna'];
     if ((o.gatunek === 'storczykowa') && (o.stadium || 1) === 1) pal = MIMIKRA;
+    if (pal.smukla) {                       // Ischnomantis gigas: długa i cienka
+      pr.grubosc *= 0.72; pr.przedtulow *= 1.3; pr.odwlok *= 1.12; pr.nogi *= 1.2;
+    }
     const z = o.poza || {};
     const s = szkielet(pr, z);
     const gr = pr.grubosc, n = pr.nogi;
@@ -638,6 +659,30 @@
       kwiaty: [[0.16, 0.5, '#ffd1e6', '#ffe27a', 6], [0.86, 0.6, '#e6b3ff', '#fff0a0', 6], [0.7, 0.74, '#ffc1dd', '#ffd86a', 5]],
       dalekieKwiaty: ['rgba(255,200,230,0.55)', 'rgba(220,180,255,0.5)', 'rgba(255,230,150,0.5)'],
       czasteczki: 'swietliki', rosa: true
+    },
+    sawanna: {        // modliszka olbrzymia: sucha afrykańska sawanna w słońcu
+      niebo: ['#fdeab4', '#f2c96a', '#d99a4a', '#9c6a34'],
+      slonce: 'rgba(255,240,180,', slonceX: 0.7, slonceY: 0.13,
+      promienie: true,
+      daleko: 'rgba(178,148,92,0.7)', srednio: 'rgba(150,120,66,0.9)', lodyga: 'rgba(120,96,50,0.95)',
+      grunt: ['rgba(150,120,60,0.0)', 'rgba(120,96,46,0.6)', 'rgba(84,64,34,0.92)'],
+      gruntZdzblo: 'rgba(140,112,54,0.9)',
+      lisc: ['#cdb96a', '#a89440', '#7a6a28'],
+      kwiaty: [[0.18, 0.6, '#e0a24a', '#ffd36a', 6], [0.82, 0.66, '#c98a3a', '#ffbe5a', 5]],
+      dalekieKwiaty: ['rgba(230,180,90,0.5)', 'rgba(210,150,70,0.5)', 'rgba(240,200,110,0.5)'],
+      czasteczki: 'pylki', rosa: false
+    },
+    busz: {           // diabeł kwiatowy: bujny afrykański busz z jaskrawym kwiatem
+      niebo: ['#c6ecd6', '#7cbfa0', '#2f6f66', '#12363a'],
+      slonce: 'rgba(224,255,220,', slonceX: 0.72, slonceY: 0.12,
+      promienie: true,
+      daleko: 'rgba(90,150,120,0.65)', srednio: 'rgba(58,118,94,0.86)', lodyga: 'rgba(44,92,74,0.92)',
+      grunt: ['rgba(44,92,74,0.0)', 'rgba(30,70,58,0.6)', 'rgba(14,38,32,0.95)'],
+      gruntZdzblo: 'rgba(44,92,74,0.9)',
+      lisc: ['#3f8f6e', '#2c6b52', '#1c4736'],
+      kwiaty: [[0.16, 0.5, '#ff7aa8', '#ffd34d', 6], [0.85, 0.6, '#ff9d4d', '#ffe27a', 6], [0.7, 0.72, '#c77aff', '#ffe0a0', 5]],
+      dalekieKwiaty: ['rgba(255,150,180,0.5)', 'rgba(255,190,110,0.5)', 'rgba(200,150,255,0.5)'],
+      czasteczki: 'pylki', rosa: true
     }
   };
 
@@ -783,7 +828,7 @@
 
     /* gałązka z liściem (albo płatkiem), na której stoi modliszka */
     const lx = w * 0.06, ly = h * 0.74;
-    ctx.strokeStyle = swiatKey === 'zmierzch' ? '#6a5a48' : (swiatKey === 'sciolka' ? '#6e5327' : '#7d6a3f');
+    ctx.strokeStyle = { zmierzch: '#6a5a48', sciolka: '#6e5327', sawanna: '#8a6a3a', busz: '#3c3020' }[swiatKey] || '#7d6a3f';
     ctx.lineCap = 'round'; ctx.lineWidth = w * 0.026;
     ctx.beginPath(); ctx.moveTo(-w * 0.02, h * 0.97); ctx.quadraticCurveTo(w * 0.1, h * 0.88, w * 0.36, ly + h * 0.012); ctx.stroke();
     ctx.save(); ctx.filter = 'blur(' + (w * 0.02) + 'px)';
@@ -826,9 +871,9 @@
 
   const TYPY = {
     muszka:   { nazwa: 'muszka owocówka', ruch: 'lot-zryw', czujnosc: 0.0, pozywienie: 1, odStadium: 1,
-                skala: 0.62, korpus: '#6b6f78', oko: '#a33', skrzydla: true, dlugie: false },
+                doStadium: 3, skala: 0.62, korpus: '#6b6f78', oko: '#a33', skrzydla: true },
     mszyca:   { nazwa: 'mszyca', ruch: 'pelza', czujnosc: 0.0, pozywienie: 1, odStadium: 1,
-                skala: 0.58, korpus: '#9ccb6a', oko: '#2b3f14', skrzydla: false, pekata: true },
+                doStadium: 3, skala: 0.58, korpus: '#9ccb6a', oko: '#2b3f14', skrzydla: false, pekata: true },
     mrowka:   { nazwa: 'mrówka', ruch: 'tlo', czujnosc: 1, pozywienie: 0, odStadium: 1,
                 skala: 0.62, korpus: '#7a3b22', oko: '#1a0d06', skrzydla: false, segmenty: true },
     mucha:    { nazwa: 'mucha domowa', ruch: 'lot-luk', czujnosc: 0.5, pozywienie: 1, odStadium: 3,
@@ -838,7 +883,16 @@
     swierszcz:{ nazwa: 'świerszcz', ruch: 'skok', czujnosc: 0.7, pozywienie: 3, odStadium: 5,
                 skala: 1.15, korpus: '#5f7a34', oko: '#20130a', skrzydla: false, dlugonogi: true },
     wazka:    { nazwa: 'ważka', ruch: 'lot-szybki', czujnosc: 0.9, pozywienie: 5, odStadium: 8,
-                skala: 1.35, korpus: '#3aa6b0', oko: '#123', skrzydla: true, wazka: true, dlugie: true }
+                skala: 1.35, korpus: '#3aa6b0', oko: '#123', skrzydla: true, wazka: true, dlugie: true },
+    /* owady przypisane do konkretnych światów (pole swiat) */
+    chrzaszcz:{ nazwa: 'chrząszcz', ruch: 'lazik', czujnosc: 0.2, pozywienie: 3, odStadium: 3,
+                swiat: 'sciolka', skala: 1.0, korpus: '#4a3524', oko: '#140c06', skrzydla: false, chrzaszcz: true },
+    pszczola: { nazwa: 'pszczoła', ruch: 'lot-brzek', czujnosc: 0.5, pozywienie: 2, odStadium: 2,
+                swiat: 'zmierzch', skala: 0.8, korpus: '#e0a92e', oko: '#241a06', skrzydla: true, paski: true },
+    osa:      { nazwa: 'osa', ruch: 'lot-szybki', czujnosc: 0.85, pozywienie: 3, odStadium: 4,
+                swiat: 'sawanna', skala: 0.82, korpus: '#f0c000', oko: '#201400', skrzydla: true, paski: true, smukla: true },
+    motyl:    { nazwa: 'motyl', ruch: 'lot-motyl', czujnosc: 0.4, pozywienie: 3, odStadium: 3,
+                swiat: 'busz', skala: 1.1, korpus: '#7a4a86', oko: '#180a20', skrzydla: true, motyl: true }
   };
 
   const mieszaj = (a, b, t) => a + (b - a) * t;
@@ -862,6 +916,25 @@
     ctx.beginPath();
     ctx.ellipse(dl * 0.5, 0, dl * 0.5, sz, 0, 0, 7);
     ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+
+  /* duże, kolorowe skrzydła motyla (rysowane pod korpusem) */
+  function motylSkrzydla(ctx, faza, typ) {
+    const flap = 1 + Math.sin(faza * 5) * 0.12;
+    const kol = typ.korpus, ciemny = przyciemnij(kol, 0.4);
+    function skrz(dx, rx, ry) {
+      const g = ctx.createRadialGradient(dx, -2, 1, dx, -2, Math.max(rx, ry));
+      g.addColorStop(0, '#fff7fb'); g.addColorStop(0.45, kol); g.addColorStop(1, ciemny);
+      ctx.fillStyle = g; ctx.strokeStyle = ciemny; ctx.lineWidth = 0.8;
+      ctx.beginPath(); ctx.ellipse(dx, -2, rx, ry, 0, 0, 7); ctx.fill(); ctx.stroke();
+    }
+    ctx.save(); ctx.scale(1, flap);
+    skrz(-10, 9, 8); skrz(10, 9, 8);       // górne skrzydła
+    skrz(-8, 6, 6);  skrz(8, 6, 6);        // dolne skrzydła
+    /* jasne kropki na skrzydłach */
+    ctx.fillStyle = 'rgba(255,255,255,0.6)';
+    [[-10,-2],[10,-2]].forEach(([x,y])=>{ ctx.beginPath(); ctx.arc(x, y, 2, 0, 7); ctx.fill(); });
     ctx.restore();
   }
 
@@ -906,6 +979,8 @@
         skrzydlo(ctx, -1, -2, 22, 4, 0.2 + trzepot * 0.4, false);
         skrzydlo(ctx, -5, -1, 20, 3.5, -0.15 - trzepot * 0.4, false);
         skrzydlo(ctx, -5, -1, 20, 3.5, 0.15 + trzepot * 0.4, false);
+      } else if (typ.motyl) {
+        motylSkrzydla(ctx, faza, typ);
       } else {
         const dl = typ.cma ? 26 : 18, sz = typ.cma ? 12 : 6;
         skrzydlo(ctx, -2, -3, dl, sz, -0.3 - trzepot, typ.cma);
@@ -926,8 +1001,21 @@
       ctx.ellipse(-2, 2, 8, 5, 0, 0, 7); ctx.fill();
       ctx.beginPath(); ctx.moveTo(-6, 0);
       ctx.lineTo(-26, -1); ctx.lineTo(-26, 3); ctx.lineTo(-6, 4); ctx.closePath();
+    } else if (typ.chrzaszcz) {
+      /* owalne, błyszczące pokrywy skrzydeł */
+      ctx.ellipse(-1, 2, 12, 9, 0, 0, 7); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = ciemny; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-1, -6); ctx.lineTo(-1, 11); ctx.stroke();
+      ctx.fillStyle = 'rgba(255,255,255,0.22)'; ctx.beginPath(); ctx.ellipse(-5, -2, 3.5, 5, 0.3, 0, 7); ctx.fill();
+      ctx.beginPath();
+    } else if (typ.motyl) {
+      ctx.ellipse(0, 2, 3.5, 8, 0, 0, 7);
     } else ctx.ellipse(0, 2, 12, 6, 0, 0, 7);
     ctx.fill(); ctx.stroke();
+    /* paski osy i pszczoły */
+    if (typ.paski) {
+      ctx.strokeStyle = '#201400'; ctx.lineWidth = 2.2;
+      for (const sx of [-5, -1, 3]) { ctx.beginPath(); ctx.moveTo(sx, -5); ctx.lineTo(sx, 9); ctx.stroke(); }
+    }
 
     /* głowa */
     ctx.fillStyle = ciemny;
@@ -961,7 +1049,7 @@
   'use strict';
 
   const KLUCZ = 'mantis:stan';
-  const KOLEJNOSC = ['zwyczajna', 'duchowa', 'storczykowa'];
+  const KOLEJNOSC = ['zwyczajna', 'duchowa', 'storczykowa', 'olbrzymia', 'diabel'];
 
   const domyslny = {
     wersja: 2,
@@ -1108,10 +1196,20 @@
     ton(659, 0.6, 'sine', 0.10, 0.12);
   }
 
+  /* zwycięstwo: krótka, wesoła melodyjka „przeszedłeś grę". */
+  function wygrana() {
+    const nuty = [523, 659, 784, 1047, 880, 1047];   // C E G C A C, w górę
+    nuty.forEach((f, i) => ton(f, 0.32, 'triangle', 0.13, i * 0.16));
+    /* miękki akord na końcu */
+    ton(523, 0.7, 'sine', 0.08, nuty.length * 0.16);
+    ton(659, 0.7, 'sine', 0.08, nuty.length * 0.16 + 0.02);
+    ton(784, 0.8, 'sine', 0.08, nuty.length * 0.16 + 0.04);
+  }
+
   function ustaw(wl) { wlaczony = !!wl; if (wl) odblukajBezpiecznie(); }
   function odblukajBezpiecznie() { try { odblokuj(); } catch (e) {} }
 
-  globalny.Dzwiek = { odblokuj, ustaw, krok, jedz, wzrost, wylinka };
+  globalny.Dzwiek = { odblokuj, ustaw, krok, jedz, wzrost, wylinka, wygrana };
 })(window);
 
 </script>
@@ -1144,12 +1242,24 @@
       fakt: 'Kiedy się przestraszy, robi ogromny skok. Duży posiłek dla większej modliszki.' },
     { id: 'owad:wazka', tytul: 'Ważka', rys: 'owad:wazka',
       fakt: 'Najszybszy owad na planszy. Złapać ważkę potrafi tylko dorosła modliszka, i to jest nie lada wyczyn.' },
+    { id: 'owad:chrzaszcz', tytul: 'Chrząszcz', rys: 'owad:chrzaszcz',
+      fakt: 'Ma twardy pancerz z błyszczących pokryw skrzydeł. Powolny, ale duży i pożywny.' },
+    { id: 'owad:pszczola', tytul: 'Pszczoła', rys: 'owad:pszczola',
+      fakt: 'Lata od kwiatu do kwiatu po nektar. Modliszka storczykowa wabi ją, udając kwiat.' },
+    { id: 'owad:osa', tytul: 'Osa', rys: 'owad:osa',
+      fakt: 'Szybka, nerwowa i bardzo czujna. Żeby ją złapać, trzeba podejść naprawdę wolno.' },
+    { id: 'owad:motyl', tytul: 'Motyl', rys: 'owad:motyl',
+      fakt: 'Leci chwiejnie i siada na kwiatach. Diabeł kwiatowy czeka nieruchomo, aż motyl sam przyleci.' },
     { id: 'modliszka:zwyczajna', tytul: 'Modliszka zwyczajna', lac: 'Mantis religiosa', rys: 'modliszka:zwyczajna',
       fakt: 'Żyje także w Polsce i jest pod ochroną. Pod odnóżem ma czarną plamkę jak oko, którą straszy.' },
     { id: 'modliszka:duchowa', tytul: 'Modliszka duchowa', lac: 'Phyllocrania paradoxa', rys: 'modliszka:duchowa',
       fakt: 'Wygląda jak zeschły liść i kołysze się na wietrze. Stojąc nieruchomo jest prawie niewidzialna.' },
     { id: 'modliszka:storczykowa', tytul: 'Modliszka storczykowa', lac: 'Hymenopus coronatus', rys: 'modliszka:storczykowa',
       fakt: 'Wygląda jak kwiat i wabi owady lepiej niż prawdziwe kwiaty. Młoda udaje mrówkę, żeby jej nie zjedzono.' },
+    { id: 'modliszka:olbrzymia', tytul: 'Modliszka olbrzymia', lac: 'Ischnomantis gigas', rys: 'modliszka:olbrzymia',
+      fakt: 'Najdłuższa modliszka świata. Samica dorasta do 17 cm. Żyje na suchych sawannach Afryki i mimo długości jest bardzo smukła.' },
+    { id: 'modliszka:diabel', tytul: 'Diabeł kwiatowy', lac: 'Idolomantis diabolica', rys: 'modliszka:diabel',
+      fakt: 'Jedna z największych modliszek. Gdy się broni, unosi odnóża i pokazuje jaskrawe kolory, żeby wyglądać groźnie i o wiele większa.' },
     { id: 'ikona:glowa', tytul: 'Ruchoma głowa', rys: 'ikona:glowa',
       fakt: 'Modliszka jako jedyny owad obraca głowę prawie dookoła i patrzy wprost na ciebie.' },
     { id: 'ikona:atak', tytul: 'Błyskawiczny chwyt', rys: 'ikona:atak',
@@ -1233,13 +1343,13 @@
      rośnie, podczas gdy zoom maleje, więc świat kurczy się względem
      modliszki. To daje odczucie wzrostu mocniej niż samo powiększenie. */
   const STADIA = [
-    { food: 3, dl: 90,  zoom: 1.040 },
-    { food: 4, dl: 106, zoom: 0.960 },
-    { food: 4, dl: 124, zoom: 0.880 },
-    { food: 5, dl: 146, zoom: 0.800 },
-    { food: 5, dl: 172, zoom: 0.720 },
-    { food: 6, dl: 205, zoom: 0.640 },
-    { food: 6, dl: 240, zoom: 0.576 },
+    { food: 4, dl: 90,  zoom: 1.040 },
+    { food: 5, dl: 106, zoom: 0.960 },
+    { food: 5, dl: 124, zoom: 0.880 },
+    { food: 6, dl: 146, zoom: 0.800 },
+    { food: 6, dl: 172, zoom: 0.720 },
+    { food: 7, dl: 205, zoom: 0.640 },
+    { food: 7, dl: 240, zoom: 0.576 },
     { food: 0, dl: 285, zoom: 0.512 }   // L8 dorosła, koniec wzrostu
   ];
 
@@ -1249,7 +1359,8 @@
   const gruntY = WYS * 0.80;
 
   /* który świat dla którego gatunku */
-  const SWIAT_GATUNKU = { zwyczajna: 'laka', duchowa: 'sciolka', storczykowa: 'zmierzch' };
+  const SWIAT_GATUNKU = { zwyczajna: 'laka', duchowa: 'sciolka', storczykowa: 'zmierzch',
+                          olbrzymia: 'sawanna', diabel: 'busz' };
 
   function przygotujTlo(swiatKey) {
     const c = tloCanvas.getContext('2d');
@@ -1310,7 +1421,9 @@
       const t = Owad.TYPY[k];
       if (t.ruch === 'tlo') return true;                   // mrówka zawsze jako tło
       if (k === 'wazka') return stan.faza === 'wolne';      // ważka tylko po zwycięstwie
-      return t.odStadium <= st && st < t.odStadium + 4;    // owady znikają, gdy modliszka za duża
+      if (t.swiat && t.swiat !== stan.swiatKey) return false;   // owad przypisany do świata
+      if (t.doStadium && st > t.doStadium) return false;        // małe owady znikają wyżej
+      return t.odStadium <= st;
     });
   }
 
@@ -1319,8 +1432,17 @@
     /* zawsze trzymamy przynajmniej jeden łatwy owad na planszy */
     const latwe = typy.filter(k => Owad.TYPY[k].czujnosc === 0);
     const brakLatwego = !stan.owady.some(o => o.zyje && Owad.TYPY[o.typ].czujnosc === 0 && Owad.TYPY[o.typ].ruch !== 'tlo');
-    const pula = (brakLatwego && latwe.length) ? latwe : typy;
-    const typ = pula[(Math.random() * pula.length) | 0];
+    let typ;
+    if (brakLatwego && latwe.length) {
+      typ = latwe[(Math.random() * latwe.length) | 0];      // dbamy o jeden łatwy
+    } else {
+      /* im wyższe stadium, tym większe (bardziej pożywne) owady częstsze */
+      const st = stan.modliszka.stadium;
+      const wagi = typy.map(k => 1 + Owad.TYPY[k].pozywienie * (0.4 + st * 0.35));
+      let suma = wagi.reduce((a, b) => a + b, 0), los = Math.random() * suma;
+      typ = typy[0];
+      for (let i = 0; i < typy.length; i++) { los -= wagi[i]; if (los <= 0) { typ = typy[i]; break; } }
+    }
     if (!typ) return null;
     const t = Owad.TYPY[typ];
     const m = stan.modliszka;
@@ -1343,8 +1465,10 @@
   function uzupelnijOwady(dt) {
     stan.owady = stan.owady.filter(o => o.zyje || o.znika > 0);
     const zywe = stan.owady.filter(o => o.zyje && Owad.TYPY[o.typ].ruch !== 'tlo').length;
-    const ile = 4;
-    if (zywe < ile && Math.random() < dt * 1.4) {
+    const st = stan.modliszka.stadium;
+    const ile = Math.max(2, 4 - Math.floor((st - 1) / 2));   // wyżej mniej owadów naraz
+    const tempo = Math.max(0.6, 1.4 - st * 0.08);            // wyżej rzadziej się pojawiają
+    if (zywe < ile && Math.random() < dt * tempo) {
       const o = nowyOwad(true);
       if (o) stan.owady.push(o);
     }
@@ -1398,6 +1522,16 @@
       case 'lot-szybki':
         o.x += Math.cos(o.faza * 2.2) * 110 * dt * o.kierunek;
         o.y = o.bazaY + Math.sin(o.faza * 4) * 26; break;
+      case 'lazik':                       // chrząszcz: powolny łazik po ziemi
+        o.x += o.kierunek * 20 * dt;
+        if (o.x < 40 || o.x > SWIAT_SZER - 40) o.kierunek *= -1;
+        break;
+      case 'lot-brzek':                   // pszczoła: brzęczący, nerwowy zawis
+        o.x += Math.sin(o.faza * 3) * 40 * dt;
+        o.y = o.bazaY + Math.sin(o.faza * 6) * 10; break;
+      case 'lot-motyl':                   // motyl: powolne, chwiejne trzepotanie
+        o.x += Math.sin(o.faza * 1.1) * 42 * dt;
+        o.y = o.bazaY + Math.sin(o.faza * 2.3) * 30; break;
     }
     if (o.kierunek === undefined) o.kierunek = o.vx >= 0 ? 1 : -1;
     else if (Math.abs(o.vx) > 1) o.kierunek = o.vx > 0 ? 1 : -1;
@@ -1500,7 +1634,7 @@
         const d = Math.abs(o.x - glowaX(m));
         const prog = (m.gatunek === 'duchowa') ? SKRADANIE * 2 + 6 : SKRADANIE + 6;
         /* im wyższe stadium, tym owady czujniejsze: promień rośnie z L */
-        const stMnoznik = 1 + (m.stadium - 1) * 0.12;    // L1 x1.0 ... L8 x1.84
+        const stMnoznik = 1 + (m.stadium - 1) * 0.16;    // wyżej owady jeszcze czujniejsze
         if (m.predkosc > prog && d < t.czujnosc * 130 * stMnoznik) sploszenie(o);
       }
       /* wabienie: modliszka storczykowa stojąc nieruchomo przyciąga
@@ -1540,11 +1674,16 @@
     /* atak */
     if (m.atak > 0) {
       m.atak += dt * 6;
-      if (m.atak >= 0.5 && m.owadCel && m.owadCel.zyje && !m.owadCel.zlapany) {
-        /* w połowie ruchu chwytamy owada */
-        const o = m.owadCel;
+      if (m.atak >= 0.5 && m.owadCel && m.owadCel.zyje && !m.owadCel.zlapany && !m.owadCel.pudlo) {
+        /* w połowie ruchu chwytamy owada, ale czujny owad potrafi wymknąć
+           się w ostatniej chwili, a im wyższe stadium, tym częściej */
+        const o = m.owadCel, t = Owad.TYPY[o.typ];
         const dx = o.x - glowaX(m);
-        if (Math.abs(dx) < m.dlugosc * 0.7) { o.zlapany = true; }
+        if (Math.abs(dx) < m.dlugosc * 0.7) {
+          const szansaUcieczki = Math.min(0.55, t.czujnosc * (0.1 + (m.stadium - 1) * 0.05));
+          if (Math.random() < szansaUcieczki) { o.pudlo = true; sploszenie(o); m.owadCel = null; }
+          else { o.zlapany = true; }
+        }
       }
       if (m.atak >= 1) {
         m.atak = 0;
@@ -1570,7 +1709,7 @@
       if (!stan.owady.some(o => o.typ === 'wazka' && o.zyje) && Math.random() < dt * 0.25) {
         const o = nowyOwad(true); if (o) { o.typ = 'wazka'; o.naZiemi = false; o.bazaY = gruntY - 90; }
       }
-      if (stan.wolneCzas > 22 && !stan.ooteka) rozpocznijOoteke();
+      if (stan.wolneCzas > 5 && !stan.ooteka) rozpocznijOoteke();
     }
 
     /* kamera z uwzględnieniem zoomu: modliszka blisko środka */
@@ -1594,6 +1733,7 @@
       for (let i = 0; i < 12; i++) {
         o.male.push({ x: o.x + (Math.random()-0.5)*40, y: o.y + 20, vx: (Math.random() - 0.5) * 120, faza: Math.random() * 6, zyc: 0 });
       }
+      if (onEpilog) onEpilog();          // podświetl domek: to koniec
     }
     o.male.forEach(mm => { mm.zyc += dt; mm.x += mm.vx * dt; mm.faza += dt; });
   }
@@ -1652,6 +1792,7 @@
       if (m.finalowa) {
         stan.faza = 'zwyciestwo'; stan.zwyc = 0;
         karta('ikona:skrzydla');
+        dzwiek('wygrana');
         if (onUkonczono) onUkonczono(m.gatunek);   // zapis i odblokowanie następnej
       } else { stan.faza = 'gra'; m.dlugosc = m.dlugoscCel; m.zoom = m.zoomCel; }
     }
@@ -2038,7 +2179,7 @@
   }
 
   /* --- publiczne API dla menu (M4) ------------------------------------- */
-  let onUkonczono = null, onKarta = null;
+  let onUkonczono = null, onKarta = null, onEpilog = null;
   function karta(id) { if (onKarta) onKarta(id); }
   function startGry(gatunek) {
     const m = stan.modliszka;
@@ -2109,6 +2250,7 @@
     doMenu: () => { stan.faza = 'menu'; },
     naUkonczenie: (cb) => { onUkonczono = cb; },
     naKarta: (cb) => { onKarta = cb; },
+    naEpilog: (cb) => { onEpilog = cb; },
     ustawDzwiek: (wl) => { stan.dzwiekWl = wl; if (globalThis.Dzwiek) globalThis.Dzwiek.ustaw(wl); },
     faza: () => stan.faza,
     stan: stan
@@ -2291,6 +2433,16 @@
 
   /* odkrycie karty w trakcie gry: zapis plus mały listek w rogu, gra się
      nie zatrzymuje */
+  MantisGra.naEpilog(() => {
+    /* koniec: podświetl domek, żeby było wiadomo, że można wrócić */
+    elDoDomu.classList.add('pulsuje');
+  });
+  /* zdejmij podświetlenie po powrocie do domu */
+  const _pokazDom = pokazDom;
+  pokazDom = function () { elDoDomu.classList.remove('pulsuje'); _pokazDom(); };
+  elDoDomu.removeEventListener('click', _pokazDom);
+  elDoDomu.addEventListener('click', pokazDom);
+
   let listekTimer = null;
   MantisGra.naKarta((id) => {
     const nowa = Zapis.odkryj(dane, id);

@@ -55,6 +55,30 @@
       kwiaty: [[0.16, 0.5, '#ffd1e6', '#ffe27a', 6], [0.86, 0.6, '#e6b3ff', '#fff0a0', 6], [0.7, 0.74, '#ffc1dd', '#ffd86a', 5]],
       dalekieKwiaty: ['rgba(255,200,230,0.55)', 'rgba(220,180,255,0.5)', 'rgba(255,230,150,0.5)'],
       czasteczki: 'swietliki', rosa: true
+    },
+    sawanna: {        // modliszka olbrzymia: sucha afrykańska sawanna w słońcu
+      niebo: ['#fdeab4', '#f2c96a', '#d99a4a', '#9c6a34'],
+      slonce: 'rgba(255,240,180,', slonceX: 0.7, slonceY: 0.13,
+      promienie: true,
+      daleko: 'rgba(178,148,92,0.7)', srednio: 'rgba(150,120,66,0.9)', lodyga: 'rgba(120,96,50,0.95)',
+      grunt: ['rgba(150,120,60,0.0)', 'rgba(120,96,46,0.6)', 'rgba(84,64,34,0.92)'],
+      gruntZdzblo: 'rgba(140,112,54,0.9)',
+      lisc: ['#cdb96a', '#a89440', '#7a6a28'],
+      kwiaty: [[0.18, 0.6, '#e0a24a', '#ffd36a', 6], [0.82, 0.66, '#c98a3a', '#ffbe5a', 5]],
+      dalekieKwiaty: ['rgba(230,180,90,0.5)', 'rgba(210,150,70,0.5)', 'rgba(240,200,110,0.5)'],
+      czasteczki: 'pylki', rosa: false
+    },
+    busz: {           // diabeł kwiatowy: bujny afrykański busz z jaskrawym kwiatem
+      niebo: ['#c6ecd6', '#7cbfa0', '#2f6f66', '#12363a'],
+      slonce: 'rgba(224,255,220,', slonceX: 0.72, slonceY: 0.12,
+      promienie: true,
+      daleko: 'rgba(90,150,120,0.65)', srednio: 'rgba(58,118,94,0.86)', lodyga: 'rgba(44,92,74,0.92)',
+      grunt: ['rgba(44,92,74,0.0)', 'rgba(30,70,58,0.6)', 'rgba(14,38,32,0.95)'],
+      gruntZdzblo: 'rgba(44,92,74,0.9)',
+      lisc: ['#3f8f6e', '#2c6b52', '#1c4736'],
+      kwiaty: [[0.16, 0.5, '#ff7aa8', '#ffd34d', 6], [0.85, 0.6, '#ff9d4d', '#ffe27a', 6], [0.7, 0.72, '#c77aff', '#ffe0a0', 5]],
+      dalekieKwiaty: ['rgba(255,150,180,0.5)', 'rgba(255,190,110,0.5)', 'rgba(200,150,255,0.5)'],
+      czasteczki: 'pylki', rosa: true
     }
   };
 
@@ -200,7 +224,7 @@
 
     /* gałązka z liściem (albo płatkiem), na której stoi modliszka */
     const lx = w * 0.06, ly = h * 0.74;
-    ctx.strokeStyle = swiatKey === 'zmierzch' ? '#6a5a48' : (swiatKey === 'sciolka' ? '#6e5327' : '#7d6a3f');
+    ctx.strokeStyle = { zmierzch: '#6a5a48', sciolka: '#6e5327', sawanna: '#8a6a3a', busz: '#3c3020' }[swiatKey] || '#7d6a3f';
     ctx.lineCap = 'round'; ctx.lineWidth = w * 0.026;
     ctx.beginPath(); ctx.moveTo(-w * 0.02, h * 0.97); ctx.quadraticCurveTo(w * 0.1, h * 0.88, w * 0.36, ly + h * 0.012); ctx.stroke();
     ctx.save(); ctx.filter = 'blur(' + (w * 0.02) + 'px)';
