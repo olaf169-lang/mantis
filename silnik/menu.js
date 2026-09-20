@@ -181,6 +181,8 @@
   const elReset = document.getElementById('reset');
   const elPotw = document.getElementById('potwierdz');
   elReset.addEventListener('click', () => elPotw.classList.add('pokaz'));
+  const elResetTekst = document.getElementById('resetTekst');
+  if (elResetTekst) elResetTekst.addEventListener('click', () => elPotw.classList.add('pokaz'));
   document.getElementById('potwierdzNie').addEventListener('click', () => elPotw.classList.remove('pokaz'));
   document.getElementById('potwierdzTak').addEventListener('click', () => {
     dane = Zapis.wyczysc();
