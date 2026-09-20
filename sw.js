@@ -2,7 +2,7 @@
    Strategia „najpierw sieć": gdy jest internet, zawsze bierzemy najnowszą
    wersję gry i odświeżamy zapas; offline gramy z ostatniego zapasu. Dzięki
    temu aktualizacje pojawiają się od razu, a gra dalej działa bez sieci. */
-const WERSJA = 'mantis-v6';
+const WERSJA = 'mantis-v7';
 const PLIKI = [
   '.', 'index.html', 'manifest.webmanifest',
   'silnik/modliszka.js', 'silnik/swiat.js', 'silnik/owad.js',

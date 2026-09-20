@@ -20,7 +20,7 @@
     mrowka:   { nazwa: 'mrówka', ruch: 'tlo', czujnosc: 1, pozywienie: 0, odStadium: 1,
                 skala: 0.62, korpus: '#7a3b22', oko: '#1a0d06', skrzydla: false, segmenty: true },
     mucha:    { nazwa: 'mucha domowa', ruch: 'lot-luk', czujnosc: 0.5, pozywienie: 1, odStadium: 3,
-                skala: 0.82, korpus: '#3b3f47', oko: '#8a2f2f', skrzydla: true, dlugie: false },
+                doStadium: 5, skala: 0.82, korpus: '#3b3f47', oko: '#8a2f2f', skrzydla: true },
     cma:      { nazwa: 'ćma', ruch: 'lot-chwiej', czujnosc: 0.3, pozywienie: 2, odStadium: 5,
                 skala: 1.05, korpus: '#b7a184', oko: '#3a2a18', skrzydla: true, cma: true },
     swierszcz:{ nazwa: 'świerszcz', ruch: 'skok', czujnosc: 0.7, pozywienie: 3, odStadium: 5,

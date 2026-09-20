@@ -95,6 +95,7 @@
     kamera: SWIAT_SZER * 0.5,
     wylinka: 0,                                   // postęp animacji wylinki 0..1
     zwyc: 0, wolneCzas: 0, konfetti: [], ooteka: null,
+    pogoda: 'normalna', pogodaDo: 0,
     czas: 0, iskry: []
   };
 
@@ -154,12 +155,27 @@
     };
   }
 
+  /* Pogoda zmienia się co kilkanaście sekund i wpływa na liczbę owadów:
+     mocne słońce = więcej, deszcz = mniej. Dodaje nieprzewidywalności. */
+  function aktualizujPogode(dt) {
+    if (stan.czas > (stan.pogodaDo || 0)) {
+      const r = Math.random();
+      stan.pogoda = r < 0.5 ? 'normalna' : (r < 0.75 ? 'slonce' : 'deszcz');
+      stan.pogodaDo = stan.czas + 12 + Math.random() * 10;
+    }
+  }
+
   function uzupelnijOwady(dt) {
     stan.owady = stan.owady.filter(o => o.zyje || o.znika > 0);
     const zywe = stan.owady.filter(o => o.zyje && Owad.TYPY[o.typ].ruch !== 'tlo').length;
     const st = stan.modliszka.stadium;
-    const ile = Math.max(2, 4 - Math.floor((st - 1) / 2));   // wyżej mniej owadów naraz
-    const tempo = Math.max(0.6, 1.4 - st * 0.08);            // wyżej rzadziej się pojawiają
+    /* wyżej trochę mniej niż na starcie, ale nie za mało; pogoda modyfikuje */
+    let ile = st <= 4 ? 4 : 3;
+    let tempoMn = 1;
+    if (stan.pogoda === 'slonce') { ile += 1; tempoMn = 1.6; }
+    else if (stan.pogoda === 'deszcz') { ile -= 1; tempoMn = 0.6; }
+    ile = Math.max(2, ile);
+    const tempo = Math.max(0.7, (1.5 - st * 0.05)) * tempoMn;   // wyżej i w deszcz rzadziej
     if (zywe < ile && Math.random() < dt * tempo) {
       const o = nowyOwad(true);
       if (o) stan.owady.push(o);
@@ -253,8 +269,7 @@
   function celuj(clientX, clientY) {
     /* po zwycięstwie (gdy skrzydła już rozłożone) dotknięcie przechodzi
        do wolnego polowania */
-    if (stan.faza === 'zwyciestwo') { if (stan.zwyc > 2.5) wejdzWolne(); return; }
-    if (stan.faza !== 'gra' && stan.faza !== 'wolne') return;
+    if (stan.faza !== 'gra' && stan.faza !== 'wolne') return;   // finał gra się sam
     const p = ekranNaSwiat(clientX, clientY);
     const m = stan.modliszka;
     /* szukamy owada blisko punktu dotyku, z dużym marginesem wybaczania */
@@ -313,6 +328,7 @@
     if (stan.faza === 'wylinka') { aktualizujWylinke(dt); return; }
     if (stan.faza === 'zwyciestwo') { aktualizujZwyciestwo(dt); return; }
 
+    aktualizujPogode(dt);
     uzupelnijOwady(dt);
     stan.owady.forEach(o => {
       if (!o.zyje && !(o.znika > 0)) return;
@@ -366,15 +382,21 @@
     /* atak */
     if (m.atak > 0) {
       m.atak += dt * 6;
-      if (m.atak >= 0.5 && m.owadCel && m.owadCel.zyje && !m.owadCel.zlapany && !m.owadCel.pudlo) {
-        /* w połowie ruchu chwytamy owada, ale czujny owad potrafi wymknąć
-           się w ostatniej chwili, a im wyższe stadium, tym częściej */
+      if (m.atak >= 0.5 && m.owadCel && m.owadCel.zyje && !m.owadCel.zlapany) {
+        /* w połowie ruchu chwytamy owada, ale zwinny owad potrafi odskoczyć
+           w ostatniej chwili. Częściej wyżej i przy pożywniejszych owadach,
+           ale za drugim razem (o.pudlo) już się nie wymknie. */
         const o = m.owadCel, t = Owad.TYPY[o.typ];
         const dx = o.x - glowaX(m);
         if (Math.abs(dx) < m.dlugosc * 0.7) {
-          const szansaUcieczki = Math.min(0.55, t.czujnosc * (0.1 + (m.stadium - 1) * 0.05));
-          if (Math.random() < szansaUcieczki) { o.pudlo = true; sploszenie(o); m.owadCel = null; }
-          else { o.zlapany = true; }
+          const szansa = o.pudlo ? 0 :
+            Math.min(0.6, (t.czujnosc * 0.4 + (t.pozywienie - 1) * 0.14) * (0.5 + (m.stadium - 1) * 0.12));
+          if (Math.random() < szansa) {
+            o.pudlo = true;                                   // odskok, ale zostaje do złapania
+            o.x += (o.x >= m.x ? 1 : -1) * (60 + Math.random() * 30);
+            o.y = o.bazaY - 22;
+            m.atak = 0; m.owadCel = null; m.cel = null;
+          } else { o.zlapany = true; }
         }
       }
       if (m.atak >= 1) {
@@ -401,7 +423,6 @@
       if (!stan.owady.some(o => o.typ === 'wazka' && o.zyje) && Math.random() < dt * 0.25) {
         const o = nowyOwad(true); if (o) { o.typ = 'wazka'; o.naZiemi = false; o.bazaY = gruntY - 90; }
       }
-      if (stan.wolneCzas > 5 && !stan.ooteka) rozpocznijOoteke();
     }
 
     /* kamera z uwzględnieniem zoomu: modliszka blisko środka */
@@ -569,16 +590,26 @@
   const mieszaj = (a, b, t) => a + (b - a) * t;
 
   /* --- zwycięstwo, wolne polowanie, ooteka ----------------------------- */
+  /* Finał to jedna automatyczna, kulminacyjna animacja (bez klikania):
+     BRAWO i skrzydła, potem modliszka składa kokon, mija czas, wykluwają się
+     słodkie maleństwa, a na końcu przechodzimy do wolnego polowania, a domek
+     pulsuje na znak, że to koniec cyklu. Oś czasu w stan.zwyc (sekundy). */
   function aktualizujZwyciestwo(dt) {
+    const m = stan.modliszka;
     stan.zwyc = (stan.zwyc || 0) + dt;
-    /* skrzydła rozprostowują się przez pierwsze dwie sekundy, potem
-       konfetti; po chwili dotknięcie ekranu przechodzi do wolnego polowania */
-    if (stan.zwyc < 3 && Math.random() < dt * 8) {
-      stan.konfetti.push(nowyKawalek());
-    }
-    stan.kamera += ((SZER / stan.modliszka.zoom / 2 > stan.modliszka.x
-      ? SZER / stan.modliszka.zoom / 2 : stan.modliszka.x) - stan.kamera) * Math.min(1, dt * 3);
+    const z = stan.zwyc;
+    if (z < 4 && Math.random() < dt * 7) stan.konfetti.push(nowyKawalek());
     aktualizujKonfetti(dt);
+    /* modliszka składa kokon około 3,5 s */
+    if (z > 3.5 && !stan.ooteka) rozpocznijOoteke();
+    if (stan.ooteka) aktualizujOoteke(dt);
+    /* kamera trzyma modliszkę i kokon */
+    const cel = stan.ooteka ? stan.ooteka.x : m.x;
+    const widoczne = SZER / m.zoom;
+    const celK = Math.max(widoczne / 2, Math.min(SWIAT_SZER - widoczne / 2, cel));
+    stan.kamera += (celK - stan.kamera) * Math.min(1, dt * 2.5);
+    /* po wykluciu i chwili podziwiania przechodzimy do wolnego polowania */
+    if (z > 13) { wejdzWolne(); }
   }
 
   let konfettiInit = false;
@@ -638,7 +669,7 @@
       if (o.zlapany) return;                       // złapany owad znika w chwycie
       Owad.rysuj(ctx, {
         x: o.x, y: o.y, typ: o.typ, faza: o.faza, kierunek: o.kierunek,
-        naZiemi: o.naZiemi, rozmiar: 66
+        naZiemi: o.naZiemi, rozmiar: 66 * (STADIA[0].zoom / stan.modliszka.zoom)
       });
     });
 
@@ -693,6 +724,7 @@
 
     /* konfetti (ekran) na zwycięstwie i w wolnym polowaniu */
     if (stan.faza === 'zwyciestwo' || stan.faza === 'wolne') rysujKonfetti();
+    if (stan.faza === 'gra' || stan.faza === 'wolne') rysujPogoda();
 
     rysujHUD();
   }
@@ -709,7 +741,7 @@
     /* maleństwa L1 */
     o.male.forEach(mm => {
       ctx.globalAlpha = Math.min(1, mm.zyc * 2);
-      Modliszka.rysuj(ctx, { x: mm.x, y: gruntY, dlugosc: 46, stadium: 1,
+      Modliszka.rysuj(ctx, { x: mm.x, y: gruntY, dlugosc: 62, stadium: 1, cute: true,
         gatunek: stan.modliszka.gatunek, kierunek: mm.vx >= 0 ? 1 : -1,
         poza: { krok: mm.faza, intensywnosc: 1, kolysanie: 0, rozlozoneOdnoza: 0.2 } });
     });
@@ -724,6 +756,25 @@
       if (dd < d) { d = dd; naj = o; }
     });
     return naj;
+  }
+
+  /* --- pogoda: deszcz albo mocne słońce (w pikselach ekranu) ---------- */
+  function rysujPogoda() {
+    const W = stan.szerEkranuCss, H = stan.wysEkranuCss;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    if (stan.pogoda === 'deszcz') {
+      ctx.strokeStyle = 'rgba(180,200,230,0.45)'; ctx.lineWidth = 2;
+      for (let i = 0; i < 40; i++) {
+        const x = (i * 97 + (stan.czas * 700) % 120) % (W + 40) - 20;
+        const y = (i * 53 + (stan.czas * 900)) % (H + 40) - 20;
+        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - 6, y + 16); ctx.stroke();
+      }
+      ctx.fillStyle = 'rgba(60,80,110,0.10)'; ctx.fillRect(0, 0, W, H);
+    } else if (stan.pogoda === 'slonce') {
+      const g = ctx.createRadialGradient(W * 0.7, -20, 0, W * 0.7, -20, H * 0.9);
+      g.addColorStop(0, 'rgba(255,244,180,0.35)'); g.addColorStop(1, 'rgba(255,244,180,0)');
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    }
   }
 
   /* --- HUD (rysowany w pikselach ekranu) ------------------------------ */
@@ -770,30 +821,44 @@
     }
 
     if (stan.faza === 'zwyciestwo') {
-      const a = Math.min(1, stan.zwyc / 1.5);
-      /* rozświetlenie */
-      ctx.globalAlpha = a * 0.35; ctx.fillStyle = '#fffbe0'; ctx.fillRect(0, 0, W, stan.wysEkranuCss);
+      const z = stan.zwyc, H = stan.wysEkranuCss;
+      const a = Math.min(1, z / 1.5);
+      /* rozświetlenie na początku, zanikające, gdy zaczyna się kokon */
+      ctx.globalAlpha = a * 0.35 * Math.max(0, 1 - (z - 3) / 2); ctx.fillStyle = '#fffbe0'; ctx.fillRect(0, 0, W, H);
       ctx.globalAlpha = 1;
-      /* osiem gwiazdek, po jednej za stadium */
-      const gy = stan.wysEkranuCss * 0.26;
-      for (let i = 0; i < 8; i++) {
-        const gx = W / 2 + (i - 3.5) * 34;
-        const wejscie = Math.max(0, Math.min(1, stan.zwyc * 3 - i * 0.2));
-        gwiazdka(ctx, gx, gy, 13 * wejscie, '#ffd23f');
+      /* faza 1 (0-3,5 s): BRAWO, gwiazdki */
+      if (z < 4.5) {
+        const gy = H * 0.24;
+        for (let i = 0; i < 8; i++) {
+          const gx = W / 2 + (i - 3.5) * 34;
+          gwiazdka(ctx, gx, gy, 13 * Math.max(0, Math.min(1, z * 3 - i * 0.2)) * Math.max(0, Math.min(1, (4.5 - z) * 2)), '#ffd23f');
+        }
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        const skala = 1 + Math.sin(z * 3) * 0.03 * Math.max(0, 1 - z / 3);
+        const zn = Math.min(a, Math.max(0, (4.5 - z) * 1.2));
+        ctx.save(); ctx.translate(W / 2, H * 0.32); ctx.scale(skala, skala);
+        ctx.lineWidth = 8; ctx.strokeStyle = '#6e9a33'; ctx.fillStyle = '#fff';
+        ctx.font = '800 64px system-ui, sans-serif';
+        ctx.globalAlpha = zn; ctx.strokeText('BRAWO!', 0, 0); ctx.fillText('BRAWO!', 0, 0);
+        ctx.globalAlpha = 1; ctx.restore();
       }
-      /* BRAWO */
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      const skala = 1 + Math.sin(stan.zwyc * 3) * 0.03 * Math.max(0, 1 - stan.zwyc / 3);
-      ctx.save(); ctx.translate(W / 2, stan.wysEkranuCss * 0.34); ctx.scale(skala, skala);
-      ctx.lineWidth = 8; ctx.strokeStyle = '#6e9a33'; ctx.fillStyle = '#fff';
-      ctx.font = '800 64px system-ui, sans-serif';
-      ctx.globalAlpha = a; ctx.strokeText('BRAWO!', 0, 0); ctx.fillText('BRAWO!', 0, 0);
-      ctx.globalAlpha = 1; ctx.restore();
-      /* podpowiedź po chwili */
-      if (stan.zwyc > 2.5) {
-        ctx.fillStyle = 'rgba(40,60,20,' + (0.5 + Math.sin(stan.czas * 3) * 0.3) + ')';
-        ctx.font = '600 18px system-ui, sans-serif';
-        ctx.fillText('dotknij, aby polować dalej', W / 2, stan.wysEkranuCss * 0.7);
+      /* faza „mija czas" (7-9,5 s): przelot światła jak zmiana pory dnia */
+      if (z > 6.5 && z < 9.8) {
+        const p = (z - 6.5) / 3.3;               // 0..1
+        const barwa = p < 0.5 ? [40, 40, 90] : [255, 210, 150];   // noc -> świt
+        ctx.globalAlpha = Math.sin(p * Math.PI) * 0.35;
+        ctx.fillStyle = 'rgb(' + barwa[0] + ',' + barwa[1] + ',' + barwa[2] + ')';
+        ctx.fillRect(0, 0, W, H); ctx.globalAlpha = 1;
+      }
+      /* podpisy prowadzące dziecko przez finał */
+      let podpis = '';
+      if (z >= 4.5 && z < 6.5) podpis = 'Modliszka składa kokon...';
+      else if (z >= 6.5 && z < 9.8) podpis = 'Mija czas...';
+      else if (z >= 9.8) podpis = 'Wykluły się małe modliszki!';
+      if (podpis) {
+        ctx.fillStyle = 'rgba(30,45,20,0.85)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = '700 22px system-ui, sans-serif';
+        ctx.fillText(podpis, W / 2, H * 0.16);
       }
     }
 

@@ -384,6 +384,7 @@
     if (pal.smukla) {                       // Ischnomantis gigas: długa i cienka
       pr.grubosc *= 0.72; pr.przedtulow *= 1.3; pr.odwlok *= 1.12; pr.nogi *= 1.2;
     }
+    if (o.cute) { pr.glowa *= 1.45; pr.biodro *= 0.92; }   // słodkie maleństwo: duża główka
     const z = o.poza || {};
     const s = szkielet(pr, z);
     const gr = pr.grubosc, n = pr.nogi;
