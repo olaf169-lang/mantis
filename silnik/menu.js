@@ -10,7 +10,7 @@
   'use strict';
 
   const KOLEJNOSC = Zapis.KOLEJNOSC;
-  const dane = Zapis.wczytaj();
+  let dane = Zapis.wczytaj();
 
   const elDom = document.getElementById('dom');
   const elKarty = document.getElementById('karty');
@@ -101,6 +101,7 @@
     elDom.classList.remove('ukryty');
     elDoDomu.style.display = 'none';
     elAlbumBtn.style.display = 'flex';
+    document.getElementById('reset').style.display = 'flex';
     MantisGra.doMenu();
     budujKarty();
   }
@@ -108,6 +109,7 @@
     elDom.classList.add('ukryty');
     elDoDomu.style.display = 'flex';
     elAlbumBtn.style.display = 'none';
+    document.getElementById('reset').style.display = 'none';
     MantisGra.start(wybrana);
   }
   elGraj.addEventListener('click', graj);
@@ -174,6 +176,19 @@
   pokazDom = function () { elDoDomu.classList.remove('pulsuje'); _pokazDom(); };
   elDoDomu.removeEventListener('click', _pokazDom);
   elDoDomu.addEventListener('click', pokazDom);
+
+  /* --- wyczyść postęp --- */
+  const elReset = document.getElementById('reset');
+  const elPotw = document.getElementById('potwierdz');
+  elReset.addEventListener('click', () => elPotw.classList.add('pokaz'));
+  document.getElementById('potwierdzNie').addEventListener('click', () => elPotw.classList.remove('pokaz'));
+  document.getElementById('potwierdzTak').addEventListener('click', () => {
+    dane = Zapis.wyczysc();
+    wybrana = 'zwyczajna';
+    elPotw.classList.remove('pokaz');
+    odswiezDzwiek();
+    budujKarty();
+  });
 
   let listekTimer = null;
   MantisGra.naKarta((id) => {

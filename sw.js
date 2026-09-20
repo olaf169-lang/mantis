@@ -1,7 +1,8 @@
-/* MANTIS, service worker. Trzyma pliki gry na telefonie, żeby działała
-   offline po pierwszym otwarciu. Numer wersji zmieniamy przy zmianie
-   plików, żeby telefon pobrał nowe. */
-const WERSJA = 'mantis-v1';
+/* MANTIS, service worker.
+   Strategia „najpierw sieć": gdy jest internet, zawsze bierzemy najnowszą
+   wersję gry i odświeżamy zapas; offline gramy z ostatniego zapasu. Dzięki
+   temu aktualizacje pojawiają się od razu, a gra dalej działa bez sieci. */
+const WERSJA = 'mantis-v3';
 const PLIKI = [
   '.', 'index.html', 'manifest.webmanifest',
   'silnik/modliszka.js', 'silnik/swiat.js', 'silnik/owad.js',
@@ -16,7 +17,7 @@ self.addEventListener('install', e => {
 
 self.addEventListener('activate', e => {
   e.waitUntil(
-    caches.keys().then(klucze => Promise.all(klucze.filter(k => k !== WERSJA).map(k => caches.delete(k))))
+    caches.keys().then(k => Promise.all(k.filter(x => x !== WERSJA).map(x => caches.delete(x))))
       .then(() => self.clients.claim())
   );
 });
@@ -24,10 +25,10 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    caches.match(e.request).then(traf => traf || fetch(e.request).then(odp => {
+    fetch(e.request).then(odp => {
       const kopia = odp.clone();
       caches.open(WERSJA).then(c => c.put(e.request, kopia)).catch(() => {});
       return odp;
-    }).catch(() => caches.match('index.html')))
+    }).catch(() => caches.match(e.request).then(traf => traf || caches.match('index.html')))
   );
 });

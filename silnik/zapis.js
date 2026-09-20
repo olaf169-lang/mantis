@@ -26,10 +26,12 @@
       if (!s) return Object.assign({}, domyslny);
       const d = JSON.parse(s);
       /* dokładamy brakujące pola, gdyby format urósł */
-      return Object.assign({}, domyslny, d,
+      const stan = Object.assign({}, domyslny, d,
         { odblokowane: d.odblokowane || domyslny.odblokowane.slice(),
           ukonczone: d.ukonczone || [],
           odkryte: d.odkryte || [] });
+      dokrecOdblokowania(stan);   // odblokuj następne dla już ukończonych
+      return stan;
     } catch (e) {
       return Object.assign({}, domyslny);
     }
@@ -53,6 +55,23 @@
     return nowaOdblokowana;     // nazwa nowo odblokowanej modliszki albo null
   }
 
+  /* Dla każdej ukończonej modliszki odblokowuje następną w kolejności.
+     Naprawia stare zapisy po dodaniu nowych gatunków. */
+  function dokrecOdblokowania(d) {
+    d.ukonczone.forEach(gat => {
+      const i = KOLEJNOSC.indexOf(gat), nast = KOLEJNOSC[i + 1];
+      if (nast && !d.odblokowane.includes(nast)) d.odblokowane.push(nast);
+    });
+  }
+
+  /* Pełne wyczyszczenie postępu: zostaje tylko pierwsza modliszka. */
+  function wyczysc() {
+    const d = { wersja: 2, dzwiek: true, wybrana: 'zwyczajna',
+      odblokowane: ['zwyczajna'], ukonczone: [], odkryte: [] };
+    zapisz(d);
+    return d;
+  }
+
   /* Odkrycie karty w albumie. Zwraca true, jeśli była nowa. */
   function odkryj(d, id) {
     if (d.odkryte.includes(id)) return false;
@@ -61,5 +80,5 @@
     return true;
   }
 
-  globalny.Zapis = { wczytaj, zapisz, ukoncz, odkryj, KOLEJNOSC };
+  globalny.Zapis = { wczytaj, zapisz, ukoncz, odkryj, wyczysc, KOLEJNOSC };
 })(window);

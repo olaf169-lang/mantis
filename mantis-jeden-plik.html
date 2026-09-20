@@ -65,6 +65,7 @@
   }
   #dzwiek { top: calc(env(safe-area-inset-top, 10px) + 8px); right: calc(env(safe-area-inset-right, 10px) + 10px); }
   #album { top: calc(env(safe-area-inset-top, 10px) + 8px); left: calc(env(safe-area-inset-left, 10px) + 10px); }
+  #reset { top: calc(env(safe-area-inset-top, 10px) + 8px); left: calc(env(safe-area-inset-left, 10px) + 66px); }
   #doDomu { top: calc(env(safe-area-inset-top, 10px) + 8px); left: calc(env(safe-area-inset-left, 10px) + 10px); display: none; }
 
   /* --- album ciekawostek --- */
@@ -114,6 +115,20 @@
     50% { transform: scale(1.12); box-shadow: 0 0 0 12px rgba(255,210,60,0); }
   }
   #doDomu.pulsuje { background: #ffd23f; animation: pulsHome 1.1s ease-in-out infinite; }
+
+  /* okno potwierdzenia wyczyszczenia */
+  #potwierdz {
+    position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center;
+    background: rgba(20,30,15,0.55); padding: 24px;
+  }
+  #potwierdz.pokaz { display: flex; }
+  #potwierdz .okno { background: #fbfdf3; border-radius: 20px; padding: 22px; max-width: 320px; text-align: center; }
+  #potwierdz .okno p { color: #3d5c1e; font-size: 18px; font-weight: 700; margin-bottom: 6px; }
+  #potwierdz .okno small { color: #7a8a5c; font-size: 13px; display: block; margin-bottom: 16px; }
+  #potwierdz .rzad { display: flex; gap: 10px; }
+  #potwierdz button { flex: 1; border: 0; border-radius: 14px; padding: 13px; font-size: 16px; font-weight: 700; }
+  #potwierdzNie { background: #dfe7d0; color: #3d5c1e; }
+  #potwierdzTak { background: #d9534f; color: #fff; }
 </style>
 </head>
 <body>
@@ -121,6 +136,7 @@
 
 <button id="dzwiek" class="rogPrzycisk" aria-label="dźwięk">🔊</button>
 <button id="album" class="rogPrzycisk" aria-label="album">📖</button>
+<button id="reset" class="rogPrzycisk" aria-label="wyczyść">🗑️</button>
 <button id="doDomu" class="rogPrzycisk" aria-label="dom">🏠</button>
 
 <div id="dom">
@@ -140,6 +156,17 @@
 <div id="kartaOpis"><div class="karta" id="kartaOpisTresc"></div></div>
 
 <div id="listek">🍃 nowa karta</div>
+
+<div id="potwierdz">
+  <div class="okno">
+    <p>Wyczyścić cały postęp?</p>
+    <small>Znikną odblokowane modliszki, światy i karty. Zostanie tylko pierwsza modliszka.</small>
+    <div class="rzad">
+      <button id="potwierdzNie">Nie</button>
+      <button id="potwierdzTak">Tak, wyczyść</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ==========================================================================
@@ -1066,10 +1093,12 @@
       if (!s) return Object.assign({}, domyslny);
       const d = JSON.parse(s);
       /* dokładamy brakujące pola, gdyby format urósł */
-      return Object.assign({}, domyslny, d,
+      const stan = Object.assign({}, domyslny, d,
         { odblokowane: d.odblokowane || domyslny.odblokowane.slice(),
           ukonczone: d.ukonczone || [],
           odkryte: d.odkryte || [] });
+      dokrecOdblokowania(stan);   // odblokuj następne dla już ukończonych
+      return stan;
     } catch (e) {
       return Object.assign({}, domyslny);
     }
@@ -1093,6 +1122,23 @@
     return nowaOdblokowana;     // nazwa nowo odblokowanej modliszki albo null
   }
 
+  /* Dla każdej ukończonej modliszki odblokowuje następną w kolejności.
+     Naprawia stare zapisy po dodaniu nowych gatunków. */
+  function dokrecOdblokowania(d) {
+    d.ukonczone.forEach(gat => {
+      const i = KOLEJNOSC.indexOf(gat), nast = KOLEJNOSC[i + 1];
+      if (nast && !d.odblokowane.includes(nast)) d.odblokowane.push(nast);
+    });
+  }
+
+  /* Pełne wyczyszczenie postępu: zostaje tylko pierwsza modliszka. */
+  function wyczysc() {
+    const d = { wersja: 2, dzwiek: true, wybrana: 'zwyczajna',
+      odblokowane: ['zwyczajna'], ukonczone: [], odkryte: [] };
+    zapisz(d);
+    return d;
+  }
+
   /* Odkrycie karty w albumie. Zwraca true, jeśli była nowa. */
   function odkryj(d, id) {
     if (d.odkryte.includes(id)) return false;
@@ -1101,7 +1147,7 @@
     return true;
   }
 
-  globalny.Zapis = { wczytaj, zapisz, ukoncz, odkryj, KOLEJNOSC };
+  globalny.Zapis = { wczytaj, zapisz, ukoncz, odkryj, wyczysc, KOLEJNOSC };
 })(window);
 
 </script>
@@ -2278,7 +2324,7 @@
   'use strict';
 
   const KOLEJNOSC = Zapis.KOLEJNOSC;
-  const dane = Zapis.wczytaj();
+  let dane = Zapis.wczytaj();
 
   const elDom = document.getElementById('dom');
   const elKarty = document.getElementById('karty');
@@ -2369,6 +2415,7 @@
     elDom.classList.remove('ukryty');
     elDoDomu.style.display = 'none';
     elAlbumBtn.style.display = 'flex';
+    document.getElementById('reset').style.display = 'flex';
     MantisGra.doMenu();
     budujKarty();
   }
@@ -2376,6 +2423,7 @@
     elDom.classList.add('ukryty');
     elDoDomu.style.display = 'flex';
     elAlbumBtn.style.display = 'none';
+    document.getElementById('reset').style.display = 'none';
     MantisGra.start(wybrana);
   }
   elGraj.addEventListener('click', graj);
@@ -2442,6 +2490,19 @@
   pokazDom = function () { elDoDomu.classList.remove('pulsuje'); _pokazDom(); };
   elDoDomu.removeEventListener('click', _pokazDom);
   elDoDomu.addEventListener('click', pokazDom);
+
+  /* --- wyczyść postęp --- */
+  const elReset = document.getElementById('reset');
+  const elPotw = document.getElementById('potwierdz');
+  elReset.addEventListener('click', () => elPotw.classList.add('pokaz'));
+  document.getElementById('potwierdzNie').addEventListener('click', () => elPotw.classList.remove('pokaz'));
+  document.getElementById('potwierdzTak').addEventListener('click', () => {
+    dane = Zapis.wyczysc();
+    wybrana = 'zwyczajna';
+    elPotw.classList.remove('pokaz');
+    odswiezDzwiek();
+    budujKarty();
+  });
 
   let listekTimer = null;
   MantisGra.naKarta((id) => {
