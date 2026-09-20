@@ -26,7 +26,7 @@
     swierszcz:{ nazwa: 'świerszcz', ruch: 'skok', czujnosc: 0.7, pozywienie: 3, odStadium: 5,
                 skala: 1.15, korpus: '#5f7a34', oko: '#20130a', skrzydla: false, dlugonogi: true },
     wazka:    { nazwa: 'ważka', ruch: 'lot-szybki', czujnosc: 0.9, pozywienie: 5, odStadium: 8,
-                skala: 1.35, korpus: '#3aa6b0', oko: '#123', skrzydla: true, wazka: true, dlugie: true },
+                skala: 1.55, korpus: '#3aa6b0', oko: '#123', skrzydla: true, wazka: true, dlugie: true },
     /* owady przypisane do konkretnych światów (pole swiat) */
     chrzaszcz:{ nazwa: 'chrząszcz', ruch: 'lazik', czujnosc: 0.2, pozywienie: 3, odStadium: 3,
                 swiat: 'sciolka', skala: 1.0, korpus: '#4a3524', oko: '#140c06', skrzydla: false, chrzaszcz: true },
