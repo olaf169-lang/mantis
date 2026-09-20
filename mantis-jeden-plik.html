@@ -55,6 +55,8 @@
     padding: 16px 64px; box-shadow: 0 6px 0 #4a6e22, 0 10px 20px rgba(60,80,30,.35);
   }
   #graj:active { transform: translateY(3px); box-shadow: 0 3px 0 #4a6e22, 0 6px 12px rgba(60,80,30,.35); }
+  #najnowsza { margin-top: 12px; margin-bottom: 4px; border: 0; background: transparent;
+    color: #5a6d3a; font-size: 13px; font-weight: 600; text-decoration: underline; padding: 6px; }
 
   /* --- przyciski w rogu --- */
   .rogPrzycisk {
@@ -145,6 +147,7 @@
   <div id="naglowekWyboru">WYBIERZ MODLISZKĘ</div>
   <div id="karty"></div>
   <button id="graj">GRAJ</button>
+  <button id="najnowsza" onclick="mantisNajnowsza()">♻️ Pobierz najnowszą wersję</button>
 </div>
 
 <div id="albumEkran">
@@ -2517,6 +2520,24 @@
 })();
 
 </script>
-
+<script>
+  if ('serviceWorker' in navigator) {
+    let odswiezono = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (odswiezono) return; odswiezono = true; location.reload();
+    });
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').then(reg => reg.update()).catch(() => {});
+    });
+  }
+  /* przycisk „najnowsza wersja": czyści pamięć i service workera, przeładowuje */
+  async function mantisNajnowsza() {
+    try {
+      if ('caches' in window) { const ks = await caches.keys(); await Promise.all(ks.map(k => caches.delete(k))); }
+      if ('serviceWorker' in navigator) { const rs = await navigator.serviceWorker.getRegistrations(); await Promise.all(rs.map(r => r.unregister())); }
+    } catch (e) {}
+    location.reload();
+  }
+</script>
 </body>
 </html>
